@@ -1,8 +1,8 @@
 from fastapi import FastAPI
-from app.controller.hltv_info_controller import router as hltv_router
+from app.controllers.match_controller import router as match_router
 
 app = FastAPI()
-app.include_router(hltv_router)
+app.include_router(match_router)
 
 @app.get("/")
 async def root():
