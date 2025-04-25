@@ -20,6 +20,7 @@ class MatchService:
             headline = group.find("span", class_="standard-headline")
             if not headline:
                 continue
+
             raw_date = headline.get_text(strip=True)
             cleaned = re.sub(r"^Results for\s+", "", raw_date)
             cleaned = re.sub(r"(\d+)(st|nd|rd|th)", r"\1", cleaned)
@@ -38,18 +39,21 @@ class MatchService:
                 score1 = int(score_spans[0].get_text(strip=True))
                 score2 = int(score_spans[1].get_text(strip=True))
 
+                event_div = result.find("td", class_="event")
+                event_name = event_div.get_text(strip=True) if event_div else ""
+
                 matches.append(
                     PreviousMatchDTO(
                         team1=team1,
                         team2=team2,
                         score1=score1,
                         score2=score2,
-                        date=match_date
+                        date=match_date,
+                        event_name=event_name
                     )
                 )
 
         return matches
-
 
     def get_upcoming_matches(self) -> List[UpcomingMatchDTO]:
         return None

@@ -9,6 +9,7 @@ class PreviousMatchDTO(BaseModel):
     score1: int
     score2: int
     date: date
+    event_name : str
 
 
 class UpcomingMatchDTO(BaseModel):
