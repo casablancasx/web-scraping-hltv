@@ -7,105 +7,110 @@ from app.dtos.match_dto import PreviousMatchDTO, UpcomingMatchDTO
 
 class MatchService:
     def __init__(self):
-        self.url = "https://www.hltv.org/team/9565/vitality"
+        self.url = "https://www.hltv.org/team/8297/furia"
         self.scraper = cloudscraper.create_scraper()
 
-    def _fetch_html_soup(self) -> BeautifulSoup:
+    def get_previous_matches(self) -> List[PreviousMatchDTO]:
         response = self.scraper.get(self.url)
-        response.raise_for_status()
-        return BeautifulSoup(response.text, "html.parser")
+        soup = BeautifulSoup(response.content, "html.parser")
 
-    def _get_event_name(self, table) -> str:
-        event_link = table.select_one("thead tr.event-header-cell a.a-reset")
-        return event_link.text.strip() if event_link else ""
+        previous_matches = []
+        recent_results_table = soup.find("h2", string="Recent results for FURIA").find_next("table")
 
-    def _parse_match_rows(self, table) -> List[dict]:
-        event_name = self._get_event_name(table)
-        matches = []
+        current_event = ""
+        for section in recent_results_table.find_all(["thead", "tbody"], recursive=False):
+            if section.name == "thead":
+                event_link = section.find("a")
+                if event_link:
+                    current_event = event_link.text.strip()
+            elif section.name == "tbody":
+                for row in section.find_all("tr", class_="team-row"):
+                    date_str = row.find("td", class_="date-cell").find("span").text.strip()
+                    match_date = datetime.strptime(date_str, "%d/%m/%Y")
 
-        for row in table.select("tbody tr.team-row"):
-            date_element = row.select_one("td.date-cell span[data-time-format='dd/MM/yyyy']")
-            match_date = datetime.strptime(date_element.text.strip(), "%d/%m/%Y").date() if date_element else None
+                    teams = row.find_all("a", class_="team-name")
+                    logos = row.find_all("img", class_="team-logo")
+                    scores = row.find("div", class_="score-cell").find_all("span", class_="score")
 
-            # Team 1 info
-            team1_name_element = row.select_one("a.team-name.team-1")
-            team1_name = team1_name_element.text.strip() if team1_name_element else "Unknown"
+                    team1 = teams[0].text.strip()
+                    team2 = teams[1].text.strip()
+                    team1_logo = logos[0]["src"]
+                    team2_logo = logos[1]["src"]
+                    score1 = int(scores[0].text.strip())
+                    score2 = int(scores[1].text.strip())
 
-            team1_logo_container = row.select_one("div.team-flex span.team-logo-container")
-            team1_logo_img = team1_logo_container.select_one("img") if team1_logo_container else None
-            team1_logo = team1_logo_img["src"] if team1_logo_img else ""
+                    match_dto = PreviousMatchDTO(
+                        team1=team1,
+                        team2=team2,
+                        team1_logo=team1_logo,
+                        team2_logo=team2_logo,
+                        score1=score1,
+                        score2=score2,
+                        date=match_date,
+                        event_name=current_event
+                    )
+                    previous_matches.append(match_dto)
 
-            # Team 2 info
-            team2_name_element = row.select_one("a.team-name.team-2")
-            team2_name = team2_name_element.text.strip() if team2_name_element else "Unknown"
-
-            team2_logo_container = row.select("div.team-flex span.team-logo-container")
-            team2_logo_img = team2_logo_container[1].select_one("img") if len(team2_logo_container) > 1 else None
-            team2_logo = team2_logo_img["src"] if team2_logo_img else ""
-
-            # Scores
-            score1_element = row.select_one("td.team-center-cell span.score:nth-of-type(1)")
-            score2_element = row.select_one("td.team-center-cell span.score:nth-of-type(2)")
-            score1 = int(score1_element.text) if score1_element and score1_element.text.isdigit() else 0
-            score2 = int(score2_element.text) if score2_element and score2_element.text.isdigit() else 0
-
-            # Match link
-            match_link_element = row.select_one("a.stats-button, a.matchpage-button")
-            match_link = match_link_element["href"] if match_link_element else ""
-
-            matches.append({
-                "event": event_name,
-                "date": match_date,
-                "team1": team1_name,
-                "team1_logo": team1_logo,
-                "team2": team2_name,
-                "team2_logo": team2_logo,
-                "score1": score1,
-                "score2": score2,
-                "link": match_link,
-            })
-
-        return matches
-
-    def _parse_upcoming_matches(self, soup: BeautifulSoup) -> List[dict]:
-        upcoming_table = soup.select_one("#matchesBox table.match-table")
-        return self._parse_match_rows(upcoming_table)
-
-    def _parse_previous_matches(self, soup: BeautifulSoup) -> List[dict]:
-        all_match_tables = soup.select("table.match-table")
-        recent_matches_table = all_match_tables[1] if len(all_match_tables) > 1 else None
-        return self._parse_match_rows(recent_matches_table) if recent_matches_table else []
+        return previous_matches
 
     def get_upcoming_matches(self) -> List[UpcomingMatchDTO]:
-        soup = self._fetch_html_soup()
-        upcoming_matches_data = self._parse_upcoming_matches(soup)
+        response = self.scraper.get(self.url)
+        soup = BeautifulSoup(response.content, "html.parser")
 
-        return [
-            UpcomingMatchDTO(
-                team1_logo=match["team1_logo"],
-                team1=match["team1"],
-                team2_logo=match["team2_logo"],
-                team2=match["team2"],
-                match_time=match["date"],
-                event_name=match["event"],
-            )
-            for match in upcoming_matches_data
-        ]
+        upcoming_matches = []
 
-    def get_previous_matches(self) -> List[PreviousMatchDTO]:
-        soup = self._fetch_html_soup()
-        previous_matches_data = self._parse_previous_matches(soup)
+        upcoming_header = soup.find("h2", string="Upcoming matches for FURIA")
+        if not upcoming_header:
+            return upcoming_matches
 
-        return [
-            PreviousMatchDTO(
-                team1_logo=match["team1_logo"],
-                team1=match["team1"],
-                score1=match["score1"],
-                team2_logo=match["team2_logo"],
-                team2=match["team2"],
-                score2=match["score2"],
-                date=match["date"],
-                event_name=match["event"],
-            )
-            for match in previous_matches_data
-        ]
+        current = upcoming_header
+        current_event = None
+
+        while True:
+            current = current.find_next_sibling()
+            if current is None:
+                break
+
+            if current.name == "h2":
+                break
+
+            if current.name == "table" and "match-table" in current.get("class", []):
+                for section in current.find_all(["thead", "tbody"], recursive=False):
+                    if section.name == "thead":
+                        event_link = section.find("a")
+                        if event_link:
+                            current_event = event_link.text.strip()
+                    elif section.name == "tbody":
+                        for row in section.find_all("tr", class_="team-row"):
+                            date_span = row.find("td", class_="date-cell").find("span")
+                            if not date_span:
+                                continue
+                            date_str = date_span.text.strip()
+                            match_time = datetime.strptime(date_str, "%d/%m/%Y")
+
+                            teams = row.find_all("a", class_="team-name")
+                            logos = row.find_all("img", class_="team-logo")
+
+                            if len(teams) < 2 or len(logos) < 2:
+                                continue
+
+                            team1 = teams[0].text.strip()
+                            team2 = teams[1].text.strip()
+                            team1_logo = logos[0]["src"]
+                            team2_logo = logos[1]["src"]
+
+                            match_dto = UpcomingMatchDTO(
+                                team1=team1,
+                                team2=team2,
+                                team1_logo=team1_logo,
+                                team2_logo=team2_logo,
+                                match_time=match_time,
+                                event_name=current_event
+                            )
+                            upcoming_matches.append(match_dto)
+
+        return upcoming_matches
+
+
+
+
