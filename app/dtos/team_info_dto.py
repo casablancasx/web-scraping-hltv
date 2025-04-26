@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from app.dtos.players_dto import PlayersDTO
+from app.dtos.player_dto import PlayerDTO
 
 
 class InfoTeamDTO(BaseModel):
@@ -10,4 +10,7 @@ class InfoTeamDTO(BaseModel):
     valve_rank: int
     world_rank: int
     coach: str
-    players: list[PlayersDTO]
+    twitter: str = ""
+    instagram: str = ""
+    twitch: str = ""
+    players: list[PlayerDTO]
