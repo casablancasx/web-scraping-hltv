@@ -4,67 +4,81 @@ from app.dtos.team_info_dto import InfoTeamDTO, PlayersDTO
 
 
 class InfoTeamService:
+    BASE_URL = "https://www.hltv.org/team/8297/furia"
+
     def __init__(self):
         self.scraper = cloudscraper.create_scraper()
-        self.url = "https://www.hltv.org/team/8297/furia"
 
     def get_team_info(self) -> InfoTeamDTO:
-        response = self.scraper.get(self.url)
-        soup = BeautifulSoup(response.content, "html.parser")
+        soup = self._fetch_page_soup()
 
-        profile_box = soup.find("div", class_="profileTopBox")
+        team_name = self._extract_team_name(soup)
+        logo = self._extract_team_logo(soup)
+        country = self._extract_country(soup)
+        valve_rank = self._extract_rank(soup, index=0)
+        world_rank = self._extract_rank(soup, index=1)
+        coach = self._extract_coach_name(soup)
+        players = self._extract_players(soup)
 
-        team_name = profile_box.find("h1", class_="profile-team-name").text.strip()
-
-        logo = profile_box.find("div", class_="profile-team-logo-container").find("img")["src"]
-
-        country_div = profile_box.find("div", class_="team-country")
-        country = country_div.text.strip()
-
-        valve_rank_text = profile_box.find_all("div", class_="profile-team-stat")[0]
-        valve_rank_link = valve_rank_text.find("a")
-        valve_rank = int(valve_rank_link.text.replace("#", "").strip()) if valve_rank_link else 0
-
-        world_rank_text = profile_box.find_all("div", class_="profile-team-stat")[1]
-        world_rank_link = world_rank_text.find("a")
-        world_rank = int(world_rank_link.text.replace("#", "").strip()) if world_rank_link else 0
-
-        coach_name = ""
-        for stat in profile_box.find_all("div", class_="profile-team-stat"):
-            if stat.find("b") and "Coach" in stat.find("b").text:
-                coach_link = stat.find("a")
-                if coach_link:
-                    coach_name = coach_link.text.strip()
-
-        players = []
-        players_box = soup.find("div", class_="bodyshot-team")
-        if players_box:
-            for player in players_box.find_all("a", class_="col-custom"):
-                player_img_tag = player.find("img", class_="bodyshot-team-img")
-                nickname_tag = player.find("span", class_="bold")
-                country_img_tag = player.find("img", class_="flag")
-
-                player_img = player_img_tag["src"] if player_img_tag else ""
-                name_player = nickname_tag.text.strip() if nickname_tag else ""
-                country_player = country_img_tag["title"] if country_img_tag else ""
-
-
-                players.append(
-                    PlayersDTO(
-                        player_img=player_img,
-                        nickname=name_player,
-                        country=country_player,
-                    )
-                )
-
-        team_info = InfoTeamDTO(
+        return InfoTeamDTO(
             logo=logo,
             team_name=team_name,
             country=country,
             valve_rank=valve_rank,
             world_rank=world_rank,
-            coach=coach_name,
+            coach=coach,
             players=players
         )
 
-        return team_info
+    def _fetch_page_soup(self) -> BeautifulSoup:
+        response = self.scraper.get(self.BASE_URL)
+        response.raise_for_status()
+        return BeautifulSoup(response.content, "html.parser")
+
+    def _extract_team_name(self, soup: BeautifulSoup) -> str:
+        return soup.select_one("div.profileTopBox h1.profile-team-name").text.strip()
+
+    def _extract_team_logo(self, soup: BeautifulSoup) -> str:
+        logo_tag = soup.select_one("div.profileTopBox div.profile-team-logo-container img")
+        return logo_tag["src"] if logo_tag else ""
+
+    def _extract_country(self, soup: BeautifulSoup) -> str:
+        country_tag = soup.select_one("div.profileTopBox div.team-country")
+        return country_tag.text.strip() if country_tag else ""
+
+    def _extract_rank(self, soup: BeautifulSoup, index: int) -> int:
+        try:
+            rank_tag = soup.select("div.profileTopBox div.profile-team-stat")[index].find("a")
+            return int(rank_tag.text.replace("#", "").strip()) if rank_tag else 0
+        except (IndexError, AttributeError):
+            return 0
+
+    def _extract_coach_name(self, soup: BeautifulSoup) -> str:
+        coach_stat = next(
+            (stat for stat in soup.select("div.profileTopBox div.profile-team-stat")
+             if stat.find("b") and "Coach" in stat.find("b").text),
+            None
+        )
+        coach_link = coach_stat.find("a") if coach_stat else None
+        return coach_link.text.strip() if coach_link else ""
+
+    def _extract_players(self, soup: BeautifulSoup) -> list[PlayersDTO]:
+        players = []
+        players_box = soup.select_one("div.bodyshot-team")
+
+        if not players_box:
+            return players
+
+        for player_tag in players_box.select("a.col-custom"):
+            player_img = player_tag.select_one("img.bodyshot-team-img")
+            nickname = player_tag.select_one("span.bold")
+            country_flag = player_tag.select_one("img.flag")
+
+            players.append(
+                PlayersDTO(
+                    player_img=player_img["src"] if player_img else "",
+                    nickname=nickname.text.strip() if nickname else "",
+                    country=country_flag["title"] if country_flag else ""
+                )
+            )
+        return players
