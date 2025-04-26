@@ -1,11 +1,12 @@
 import cloudscraper
 from bs4 import BeautifulSoup
+import os
 from datetime import datetime
 from typing import List
 from app.dtos.match_dto import PreviousMatchDTO, UpcomingMatchDTO
 
 class MatchService:
-    BASE_URL = "https://www.hltv.org/team/8297/furia"
+    BASE_URL = os.getenv("FURIA_HLTV_URL", "https://www.hltv.org/team/8297/furia")
 
     def __init__(self):
         self.scraper = cloudscraper.create_scraper()

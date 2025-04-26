@@ -1,9 +1,10 @@
 from bs4 import BeautifulSoup
 import cloudscraper
+import os
 from app.dtos.team_info_dto import InfoTeamDTO, PlayerDTO
 
 class InfoTeamService:
-    BASE_URL = "https://www.hltv.org/team/8297/furia"
+    BASE_URL = os.getenv("FURIA_HLTV_URL", "https://www.hltv.org/team/8297/furia")
 
     def __init__(self):
         self.scraper = cloudscraper.create_scraper()

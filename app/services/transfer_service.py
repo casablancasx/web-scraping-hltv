@@ -1,11 +1,12 @@
 from typing import List, Optional
+import os
 from bs4 import BeautifulSoup
 import cloudscraper
 from datetime import datetime
 from app.dtos.transfer_dto import TransferDTO
 
 class TransferService:
-    BASE_URL = "https://www.hltv.org/team/8297/furia"
+    BASE_URL = os.getenv("FURIA_HLTV_URL", "https://www.hltv.org/team/8297/furia")
 
     def __init__(self):
         self.scraper = cloudscraper.create_scraper()
