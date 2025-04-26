@@ -14,7 +14,7 @@ class InfoTeamService:
 
         profile_box = soup.find("div", class_="profileTopBox")
 
-        name = profile_box.find("h1", class_="profile-team-name").text.strip()
+        team_name = profile_box.find("h1", class_="profile-team-name").text.strip()
 
         logo = profile_box.find("div", class_="profile-team-logo-container").find("img")["src"]
 
@@ -59,7 +59,7 @@ class InfoTeamService:
 
         team_info = InfoTeamDTO(
             logo=logo,
-            name=name,
+            team_name=team_name,
             country=country,
             valve_rank=valve_rank,
             world_rank=world_rank,
