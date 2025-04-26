@@ -21,7 +21,7 @@ class InfoTeamService:
         players = self._extract_players(soup)
 
         return InfoTeamDTO(
-            logo=logo,
+            team_logo=logo,
             team_name=team_name,
             country=country,
             valve_rank=valve_rank,

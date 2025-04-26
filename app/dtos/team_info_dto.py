@@ -4,7 +4,7 @@ from app.dtos.player_dto import PlayerDTO
 
 
 class InfoTeamDTO(BaseModel):
-    logo: str
+    team_logo: str
     team_name: str
     country: str
     valve_rank: int
