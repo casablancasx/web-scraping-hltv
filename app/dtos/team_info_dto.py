@@ -10,6 +10,7 @@ class InfoTeamDTO(BaseModel):
     valve_rank: int
     world_rank: int
     coach: str
+    coach_nationality: str = ""
     twitter: str = ""
     instagram: str = ""
     twitch: str = ""
