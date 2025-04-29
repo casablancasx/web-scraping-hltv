@@ -18,17 +18,17 @@ class ChampionshipsService:
         resp.raise_for_status()
         return BeautifulSoup(resp.text, "html.parser")
 
-    def scrape_upcoming_championships(self) -> List[UpComingChampionshipsDto]:
+    def scrape_upcoming_and_ongoing_championships(self) -> List[UpComingChampionshipsDto]:
         soup = self._fetch_page_soup()
-        upcoming = []
+        upcoming_and_ongoing_championships = []
 
         events_container = soup.find("div", {"class": "sub-tab-content-events", "id": "ongoingEvents"})
         if not events_container:
-            return upcoming
+            return upcoming_and_ongoing_championships
 
         events_holder = events_container.find("div", class_="upcoming-events-holder")
         if not events_holder:
-            return upcoming
+            return upcoming_and_ongoing_championships
 
         event_links = events_holder.find_all("a", class_="a-reset")
 
@@ -68,10 +68,10 @@ class ChampionshipsService:
                     status=status
                 )
 
-                upcoming.append(dto)
+                upcoming_and_ongoing_championships.append(dto)
 
             except Exception as e:
                 print(f"Error parsing event: {e}")
                 continue
 
-        return upcoming
+        return upcoming_and_ongoing_championships
