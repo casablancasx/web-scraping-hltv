@@ -1,10 +1,10 @@
 import os
-from datetime import datetime, date
+from datetime import datetime
 from typing import List
 import cloudscraper
 from bs4 import BeautifulSoup
 
-from app.dtos.championships_dto import UpComingChampionshipsDto
+from app.dtos.championships_dto import  ChampionshipsDTO
 
 
 class ChampionshipsService:
@@ -18,7 +18,7 @@ class ChampionshipsService:
         resp.raise_for_status()
         return BeautifulSoup(resp.text, "html.parser")
 
-    def scrape_upcoming_and_ongoing_championships(self) -> List[UpComingChampionshipsDto]:
+    def scrape_upcoming_and_ongoing_championships(self) -> List[ChampionshipsDTO]:
         soup = self._fetch_page_soup()
         upcoming_and_ongoing_championships = []
 
@@ -58,7 +58,7 @@ class ChampionshipsService:
 
                 days_until_event = (start_date_obj - today).days if status == "UPCOMING" else 0
 
-                dto = UpComingChampionshipsDto(
+                dto = ChampionshipsDTO(
                     days_until_event=max(days_until_event, 0),
                     event_name=event_name,
                     event_img=event_img,
