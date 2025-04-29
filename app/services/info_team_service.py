@@ -1,7 +1,9 @@
 from bs4 import BeautifulSoup
 import cloudscraper
 import os
-from app.dtos.team_info_dto import InfoTeamDTO, PlayerDTO
+
+from app.dtos.player_dto import ActivePlayerDTO
+from app.dtos.team_info_dto import InfoTeamDTO
 
 class InfoTeamService:
     BASE_URL = os.getenv("FURIA_HLTV_URL", "https://www.hltv.org/team/8297/furia")
@@ -85,24 +87,25 @@ class InfoTeamService:
 
         return twitter, instagram, twitch
 
-    def _extract_players(self, soup: BeautifulSoup) -> list[PlayerDTO]:
-        player_rows = soup.select('.players-table tbody tr')
+    def _extract_players(self, soup: BeautifulSoup) -> list[ActivePlayerDTO]:
+        player_cards = soup.select('.bodyshot-team a.col-custom')
         players = []
 
-        for row in player_rows:
-            player_img = row.select_one('.playersBox-img-wrapper img')['src']
-            nickname = row.select_one('.playersBox-playernick div.text-ellipsis').text.strip()
-            nationality = row.select_one('.playersBox-playernick img.flag')['title']
-            status = row.select_one('.status-cell .player-status').text.strip()
-            rating_text = row.select_one('.rating-cell').text.strip()
-            rating = float(rating_text.split()[0])
+        for card in player_cards:
+            player_img_tag = card.select_one('.bodyshot-team-img')
+            nickname_tag = card.select_one('.playerFlagName .bold')
+            nationality_tag = card.select_one('.playerFlagName img.flag')
 
-            players.append(PlayerDTO(
+            player_img = player_img_tag['src'] if player_img_tag else ""
+            nickname = nickname_tag.text.strip() if nickname_tag else ""
+            nationality = nationality_tag['title'] if nationality_tag else ""
+
+            players.append(ActivePlayerDTO(
                 player_img=player_img,
                 nickname=nickname,
-                nationality=nationality,
-                status=status,
-                rating=rating
+                nationality=nationality
             ))
 
         return players
+
+
