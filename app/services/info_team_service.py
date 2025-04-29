@@ -17,7 +17,7 @@ class InfoTeamService:
         country = self._extract_country(soup)
         valve_rank = self._extract_valve_rank(soup)
         world_rank = self._extract_world_rank(soup)
-        coach = self._extract_coach(soup)
+        coach, coach_nationality = self._extract_coach_info(soup)
         twitter, instagram, twitch = self._extract_social_links(soup)
         players = self._extract_players(soup)
 
@@ -28,6 +28,7 @@ class InfoTeamService:
             valve_rank=valve_rank,
             world_rank=world_rank,
             coach=coach,
+            coach_nationality=coach_nationality,
             twitter=twitter,
             instagram=instagram,
             twitch=twitch,
@@ -56,9 +57,18 @@ class InfoTeamService:
         world_rank_text = soup.select_one('.profile-team-stat:has(img[alt="HLTV logo"]) .right a').text.strip()
         return int(world_rank_text.replace('#', ''))
 
-    def _extract_coach(self, soup: BeautifulSoup) -> str:
-        coach_tag = soup.select_one('.profile-team-stat:has(b:contains("Coach")) a span.bold')
-        return coach_tag.text.strip().strip("'") if coach_tag else ""
+    def _extract_coach_info(self, soup: BeautifulSoup) -> tuple[str, str]:
+        coach_section = soup.select_one('.profile-team-stat:has(b:contains("Coach")) a')
+        if not coach_section:
+            return "", ""
+
+        coach_img = coach_section.select_one('img.flag')
+        coach_nationality = coach_img['title'] if coach_img else ""
+
+        coach_name_tag = coach_section.select_one('span.bold')
+        coach_nickname = coach_name_tag.text.strip().strip("'") if coach_name_tag else ""
+
+        return coach_nickname, coach_nationality
 
     def _extract_social_links(self, soup: BeautifulSoup) -> tuple[str, str, str]:
         twitter = instagram = twitch = ""
