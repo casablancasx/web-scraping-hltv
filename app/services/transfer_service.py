@@ -1,6 +1,6 @@
 from typing import List, Optional
-import os
 from bs4 import BeautifulSoup
+import os
 import cloudscraper
 from datetime import datetime
 from app.dtos.transfer_dto import TransferDTO
@@ -10,6 +10,11 @@ class TransferService:
 
     def __init__(self):
         self.scraper = cloudscraper.create_scraper()
+
+    def _fetch_page_soup(self) -> BeautifulSoup:
+        response = self.scraper.get(self.BASE_URL)
+        response.raise_for_status()
+        return BeautifulSoup(response.content, "html.parser")
 
     def get_transfer_info(self) -> List[TransferDTO]:
         soup = self._fetch_page_soup()
@@ -23,32 +28,35 @@ class TransferService:
 
         return transfers
 
-    def _fetch_page_soup(self) -> BeautifulSoup:
-        response = self.scraper.get(self.BASE_URL)
-        response.raise_for_status()
-        return BeautifulSoup(response.content, "html.parser")
-
     def _parse_transfer_row(self, row) -> Optional[TransferDTO]:
         nickname = self._extract_nickname(row)
+        player_img = self._extract_player_img(row)
         action, text = self._extract_action(row)
-        from_team, to_team = self._extract_teams(row, text)
+        from_team, to_team, from_team_img, to_team_img = self._extract_teams(row, text)
         role = self._extract_role(row)
-        date = self._extract_date(row)
+        transfer_date = self._extract_date(row)
 
-        if nickname and action and date:
+        if nickname and action and transfer_date:
             return TransferDTO(
+                player_img=player_img,
                 nickname=nickname,
                 role=role,
                 action=action,
                 from_team=from_team,
+                from_team_img=from_team_img,
                 to_team=to_team,
-                date=date
+                to_team_img=to_team_img,
+                date=transfer_date
             )
         return None
 
     def _extract_nickname(self, row) -> Optional[str]:
         tag = row.select_one('.transfer-movement a b')
         return tag.text.strip() if tag else None
+
+    def _extract_player_img(self, row) -> Optional[str]:
+        img_tag = row.select_one('.transfer-player-image')
+        return img_tag['src'] if img_tag else None
 
     def _extract_action(self, row) -> tuple[Optional[str], str]:
         movement_tag = row.select_one('.transfer-movement')
@@ -66,22 +74,24 @@ class TransferService:
             return "part ways", text
         return None, text
 
-    def _extract_teams(self, row, text: str) -> tuple[Optional[str], Optional[str]]:
-        links = row.select('.transfer-movement a')
+    def _extract_teams(self, row, text: str) -> tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
+        teams = row.select('.transfer-team-container')
+        from_team = from_team_img = None
+        to_team = to_team_img = None
 
-        from_team = None
-        if len(links) >= 2:
-            from_team = links[1].text.strip()
-        elif "no team" in text:
-            from_team = "No team"
+        if len(teams) >= 1:
+            from_team_tag = teams[0].select_one('.transfer-team-logo')
+            if from_team_tag and from_team_tag.get('title') and from_team_tag['title'] != "?":
+                from_team = from_team_tag['title']
+                from_team_img = from_team_tag['src']
 
-        to_team = None
-        if len(links) >= 3:
-            to_team = links[2].text.strip()
-        elif "joins" in text or "is benched" in text or "parts ways" in text:
-            to_team = "FURIA"
+        if len(teams) >= 2:
+            to_team_tag = teams[1].select_one('.transfer-team-logo')
+            if to_team_tag and to_team_tag.get('title') and to_team_tag['title'] != "?":
+                to_team = to_team_tag['title']
+                to_team_img = to_team_tag['src']
 
-        return from_team, to_team
+        return from_team, to_team, from_team_img, to_team_img
 
     def _extract_role(self, row) -> str:
         statuses = row.select('.transfer-team-status')
