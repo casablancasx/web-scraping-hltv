@@ -1,18 +1,17 @@
 from bs4 import BeautifulSoup
-import os
-from app.dtos.trophy_dto import TrophyDTO
+from cloudscraper import CloudScraper
 
-import cloudscraper
+from app.dtos.trophy_dto import TrophyDTO
+from app.config import Settings
 
 
 class TrophyService:
-    BASE_URL = os.getenv("FURIA_HLTV_URL", "https://www.hltv.org/team/8297/furia")
-
-    def __init__(self):
-        self.scraper = cloudscraper.create_scraper()
+    def __init__(self, scraper: CloudScraper, settings: Settings):
+        self.scraper = scraper
+        self.base_url = settings.furia_hltv_url
 
     def _fetch_page_soup(self) -> BeautifulSoup:
-        response = self.scraper.get(self.BASE_URL)
+        response = self.scraper.get(self.base_url)
         response.raise_for_status()
         return BeautifulSoup(response.text, 'html.parser')
 

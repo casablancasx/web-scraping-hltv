@@ -1,18 +1,17 @@
 from typing import List, Optional
 from bs4 import BeautifulSoup
-import os
-import cloudscraper
+from cloudscraper import CloudScraper
 from datetime import datetime
 from app.dtos.transfer_dto import TransferDTO
+from app.config import Settings
 
 class TransferService:
-    BASE_URL = os.getenv("FURIA_HLTV_URL", "https://www.hltv.org/team/8297/furia")
-
-    def __init__(self):
-        self.scraper = cloudscraper.create_scraper()
+    def __init__(self, scraper: CloudScraper, settings: Settings):
+        self.scraper = scraper
+        self.base_url = settings.furia_hltv_url
 
     def _fetch_page_soup(self) -> BeautifulSoup:
-        response = self.scraper.get(self.BASE_URL)
+        response = self.scraper.get(self.base_url)
         response.raise_for_status()
         return BeautifulSoup(response.content, "html.parser")
 
@@ -38,7 +37,7 @@ class TransferService:
 
         if nickname and action and transfer_date:
             return TransferDTO(
-                player_img=player_img,
+                player_img=player_img if player_img else "", # Ensure non-optional
                 nickname=nickname,
                 role=role,
                 action=action,
@@ -104,6 +103,9 @@ class TransferService:
     def _extract_date(self, row) -> Optional[datetime.date]:
         date_tag = row.select_one('.transfer-date')
         if date_tag and date_tag.get('data-unix'):
-            timestamp = int(date_tag['data-unix']) / 1000
-            return datetime.utcfromtimestamp(timestamp).date()
+            try:
+                timestamp = int(date_tag['data-unix']) / 1000
+                return datetime.utcfromtimestamp(timestamp).date()
+            except (ValueError, TypeError):
+                return None
         return None

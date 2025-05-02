@@ -6,4 +6,4 @@ class CoachInfoDTO(BaseModel):
     nickname: str
     maps_played: int
     trophies_won: int
-    winrante: str
+    winrate: str 
