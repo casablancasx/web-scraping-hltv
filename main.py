@@ -6,6 +6,7 @@ from app.controllers.trophy_controller import router as trophy_router
 from app.controllers.player_controller import router as player_router
 from app.controllers.championships_controller import router as championships_router
 from app.controllers.news_controller import router as news_router
+from app.controllers.coach_controller import router as coach_router
 
 app = FastAPI()
 app.include_router(match_router)
@@ -15,4 +16,5 @@ app.include_router(transfer_router)
 app.include_router(player_router)
 app.include_router(championships_router)
 app.include_router(news_router)
+app.include_router(coach_router)
 
