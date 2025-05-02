@@ -5,13 +5,14 @@ from typing import Optional
 
 class PreviousMatchDTO(BaseModel):
     team1_logo: str
-    team1: str
-    score1: int
+    team1_name: str
+    team1_score: int
     team2_logo: str
-    team2: str
-    score2: int
-    date: date
+    team2_name: str
+    team2_score: int
+    match_date: date
     event_name : str
+    result: Optional[str] = None
 
 
 class UpcomingMatchDTO(BaseModel):

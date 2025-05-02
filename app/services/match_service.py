@@ -1,6 +1,4 @@
-# package: app.services
-# file: match_service.py
-from cloudscraper import CloudScraper # Import CloudScraper type hint
+from cloudscraper import CloudScraper
 from bs4 import BeautifulSoup
 from datetime import datetime
 from typing import List, Optional
@@ -97,15 +95,18 @@ class MatchService:
                 except (ValueError, IndexError):
                     continue
 
+                result_match = "WIN" if score1 > score2 else "LOST"
+
                 match = PreviousMatchDTO(
-                    team1=teams[0].text.strip(),
-                    team2=teams[1].text.strip(),
+                    team1_name=teams[0].text.strip(),
+                    team2_name=teams[1].text.strip(),
                     team1_logo=team1_logo_src,
                     team2_logo=team2_logo_src,
-                    score1=score1,
-                    score2=score2,
-                    date=match_date,
-                    event_name=event_name
+                    team1_score=score1,
+                    team2_score=score2,
+                    match_date=match_date,
+                    event_name=event_name,
+                    result= result_match
                 )
                 matches.append(match)
             except Exception as e:
