@@ -1,11 +1,6 @@
 from pydantic import BaseModel
 
 
-class ActivePlayerDTO(BaseModel):
-    player_img: str
-    nickname: str
-    nationality: str
-
 
 
 class DetailedPlayerDTO(BaseModel):
@@ -15,3 +10,4 @@ class DetailedPlayerDTO(BaseModel):
     status: str
     rating: float
     maps_played: int
+    time_on_team: str

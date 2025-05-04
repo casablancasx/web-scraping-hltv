@@ -19,21 +19,14 @@ def get_scraper() -> CloudScraper:
         raise RuntimeError("Could not initialize the web scraper.") from e
 
 
-from app.services.trophy_service import TrophyService
 from app.services.transfer_service import TransferService
-from app.services.player_service import PlayerService
 from app.services.news_service import NewsService
 from app.services.match_service import MatchService
 from app.services.info_team_service import InfoTeamService
-from app.services.coach_service import CoachService
 from app.services.championships_service import ChampionshipsService
 
 
-def get_trophy_service(
-    scraper: CloudScraper = Depends(get_scraper),
-    settings: Settings = Depends(get_settings)
-) -> TrophyService:
-    return TrophyService(scraper=scraper, settings=settings)
+
 
 def get_transfer_service(
     scraper: CloudScraper = Depends(get_scraper),
@@ -41,11 +34,6 @@ def get_transfer_service(
 ) -> TransferService:
     return TransferService(scraper=scraper, settings=settings)
 
-def get_player_service(
-    scraper: CloudScraper = Depends(get_scraper),
-    settings: Settings = Depends(get_settings)
-) -> PlayerService:
-    return PlayerService(scraper=scraper, settings=settings)
 
 def get_news_service(
     scraper: CloudScraper = Depends(get_scraper),
@@ -65,11 +53,6 @@ def get_info_team_service(
 ) -> InfoTeamService:
     return InfoTeamService(scraper=scraper, settings=settings)
 
-def get_coach_service(
-    scraper: CloudScraper = Depends(get_scraper),
-    settings: Settings = Depends(get_settings)
-) -> CoachService:
-    return CoachService(scraper=scraper, settings=settings)
 
 def get_championships_service(
     scraper: CloudScraper = Depends(get_scraper),
